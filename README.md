@@ -29,7 +29,7 @@ The TLO Chatbot is an interactive web application developed for TLO, designed to
 2. **Set Up Python Environment:**
    - Navigate to the repository directory:
      ```bash
-     cd TLO_CHATBOT
+     cd TLOChatBot
      ```
    - Create a virtual environment:
      ```bash
