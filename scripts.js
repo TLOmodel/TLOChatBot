@@ -128,7 +128,7 @@ async function getGeminiResponse(prompt, conversationId) {
         llm_model_name    : "gemini-1.5-flash",
         llm_temperature   : 1,
         llm_base_url      : null,
-        llm_api_key       : "AIzaSyAn4pR_NsfKdxi4q7cGBH2tJAwDopsY_Wk",
+        llm_api_key       : "api-key",
         use_own_browser   : true,
         headless          : false,
         disable_security  : true,
