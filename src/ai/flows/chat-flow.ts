@@ -57,19 +57,15 @@ If the user's question is not covered by the knowledge base, state that you do n
 
 ${knowledgeBase ? `START OF KNOWLEDGE BASE\n${knowledgeBase}\nEND OF KNOWLEDGE BASE` : ''}`;
 
-
-    const prompt = [
-        { role: 'system', content: [{text: systemPrompt}]}
-    ];
-    if (attachment) {
-      prompt.push({ role: 'user', content: [{text: message}, {media: {url: attachment.dataUri}}] });
-    } else {
-      prompt.push({ role: 'user', content: [{text: message}] });
-    }
-
     const { text } = await ai.generate({
-      history: history,
-      prompt: prompt,
+      history: [
+        ...history,
+        { role: 'system', content: [{ text: systemPrompt }] },
+      ],
+      prompt: {
+        text: message,
+        media: attachment ? { url: attachment.dataUri } : undefined,
+      },
       model: attachment ? 'googleai/gemini-2.0-flash' : 'googleai/gemini-2.0-flash',
     });
     
