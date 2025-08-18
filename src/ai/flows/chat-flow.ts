@@ -57,7 +57,7 @@ User prompt: ${message}
     const { text } = await ai.generate({
       history: history,
       prompt: prompt,
-      model: attachment ? 'googleai/gemini-2.0-flash' : ai.getModel(),
+      model: attachment ? 'googleai/gemini-2.0-flash' : 'googleai/gemini-2.0-flash',
     });
     return { response: text };
   }
