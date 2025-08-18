@@ -49,31 +49,30 @@ const chatFlow = ai.defineFlow(
     
     const knowledgeBase = await getKnowledgeBaseContent();
 
-    const prompt = `You are TLO, a helpful AI assistant and an expert on the TLOmodel (Thanzi la Onse model).
-Your answers should be concise and helpful.
+    const systemPrompt = `You are TLO, a helpful AI assistant and an expert on the TLOmodel (Thanzi la Onse model).
+Your answers should be in-depth, helpful, and based on the provided context.
 You can format your responses with Markdown.
 You have been provided with a knowledge base containing information about the TLOmodel. Use this information to answer user questions.
+If the user's question is not covered by the knowledge base, state that you do not have information on that topic based on the provided documents.
 
-${knowledgeBase ? `Refer to the following knowledge base content if relevant to the user query:\n{{{knowledgeBase}}}` : ''}
+${knowledgeBase ? `START OF KNOWLEDGE BASE\n${knowledgeBase}\nEND OF KNOWLEDGE BASE` : ''}`;
 
-{{#if attachment}}
-The user has provided an attachment. Use it to answer the prompt.
-Attachment: {{media url=attachment.dataUri}}
-{{/if}}
 
-User prompt: {{{message}}}
-`;
+    const prompt = [
+        { role: 'system', content: [{text: systemPrompt}]}
+    ];
+    if (attachment) {
+      prompt.push({ role: 'user', content: [{text: message}, {media: {url: attachment.dataUri}}] });
+    } else {
+      prompt.push({ role: 'user', content: [{text: message}] });
+    }
 
     const { text } = await ai.generate({
       history: history,
       prompt: prompt,
       model: attachment ? 'googleai/gemini-2.0-flash' : 'googleai/gemini-2.0-flash',
-      promptParams: {
-        knowledgeBase,
-        message,
-        attachment
-      }
     });
+    
     return { response: text };
   }
 );
