@@ -58,10 +58,8 @@ If the user's question is not covered by the knowledge base, state that you do n
 ${knowledgeBase ? `START OF KNOWLEDGE BASE\n${knowledgeBase}\nEND OF KNOWLEDGE BASE` : ''}`;
 
     const { text } = await ai.generate({
-      history: [
-        { role: 'system', content: [{ text: systemPrompt }] },
-        ...history,
-      ],
+      system: systemPrompt,
+      history: history,
       prompt: {
         text: message,
         media: attachment ? { url: attachment.dataUri } : undefined,
