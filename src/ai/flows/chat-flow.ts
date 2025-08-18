@@ -66,7 +66,7 @@ ${knowledgeBase ? `START OF KNOWLEDGE BASE\n${knowledgeBase}\nEND OF KNOWLEDGE B
         text: message,
         media: attachment ? { url: attachment.dataUri } : undefined,
       },
-      model: attachment ? 'googleai/gemini-2.0-flash' : 'googleai/gemini-2.0-flash',
+      model: 'googleai/gemini-2.0-flash',
     });
     
     return { response: text };
