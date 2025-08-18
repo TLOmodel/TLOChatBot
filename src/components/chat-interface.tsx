@@ -107,6 +107,7 @@ export default function ChatInterface() {
         history,
         attachment: attachment ? {
             dataUri: attachment.data,
+            contentType: attachment.type
         } : undefined
       };
 

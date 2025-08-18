@@ -10,6 +10,7 @@ export const ChatInputSchema = z.object({
   message: z.string().describe('The user’s message.'),
   attachment: z.object({
     dataUri: z.string().describe("An attached file as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
+    contentType: z.string().describe('The MIME type of the attachment.')
   }).optional(),
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
