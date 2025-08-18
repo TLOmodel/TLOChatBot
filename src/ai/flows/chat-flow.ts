@@ -49,26 +49,30 @@ const chatFlow = ai.defineFlow(
     
     const knowledgeBase = await getKnowledgeBaseContent();
 
-    const prompt = `
-You are TLO, a helpful AI assistant and an expert on the TLOmodel (Thanzi la Onse model).
+    const prompt = `You are TLO, a helpful AI assistant and an expert on the TLOmodel (Thanzi la Onse model).
 Your answers should be concise and helpful.
 You can format your responses with Markdown.
 You have been provided with a knowledge base containing information about the TLOmodel. Use this information to answer user questions.
 
-${knowledgeBase ? 'Refer to the following knowledge base content if relevant to the user query:\n' + knowledgeBase : ''}
+${knowledgeBase ? `Refer to the following knowledge base content if relevant to the user query:\n{{{knowledgeBase}}}` : ''}
 
 {{#if attachment}}
 The user has provided an attachment. Use it to answer the prompt.
 Attachment: {{media url=attachment.dataUri}}
 {{/if}}
 
-User prompt: ${message}
+User prompt: {{{message}}}
 `;
 
     const { text } = await ai.generate({
       history: history,
       prompt: prompt,
       model: attachment ? 'googleai/gemini-2.0-flash' : 'googleai/gemini-2.0-flash',
+      promptParams: {
+        knowledgeBase,
+        message,
+        attachment
+      }
     });
     return { response: text };
   }
