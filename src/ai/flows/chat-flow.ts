@@ -10,17 +10,27 @@ import { ai } from '@/ai/genkit';
 import { ChatInputSchema, ChatOutputSchema, type ChatInput } from '@/lib/ai-schemas';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import mammoth from 'mammoth';
 
 async function getKnowledgeBaseContent(): Promise<string> {
   const kbPath = path.join(process.cwd(), 'src', 'knowledge-base');
   try {
     const files = await fs.readdir(kbPath);
     const contents = await Promise.all(
-      files.map(file => fs.readFile(path.join(kbPath, file), 'utf-8'))
+      files.map(async (file) => {
+        const filePath = path.join(kbPath, file);
+        if (file.endsWith('.txt')) {
+          return fs.readFile(filePath, 'utf-8');
+        } else if (file.endsWith('.docx')) {
+          const result = await mammoth.extractRawText({ path: filePath });
+          return result.value;
+        }
+        return '';
+      })
     );
-    return contents.join('\n\n---\n\n');
+    return contents.filter(Boolean).join('\n\n---\n\n');
   } catch (error) {
-    console.warn('Knowledge base directory not found or unreadable, skipping.');
+    console.warn('Knowledge base directory not found or unreadable, or contains unsupported file types.', error);
     return '';
   }
 }
@@ -40,9 +50,10 @@ const chatFlow = ai.defineFlow(
     const knowledgeBase = await getKnowledgeBaseContent();
 
     const prompt = `
-You are TLO, a helpful AI assistant.
+You are TLO, a helpful AI assistant and an expert on the TLOmodel (Thanzi la Onse model).
 Your answers should be concise and helpful.
 You can format your responses with Markdown.
+You have been provided with a knowledge base containing information about the TLOmodel. Use this information to answer user questions.
 
 ${knowledgeBase ? 'Refer to the following knowledge base content if relevant to the user query:\n' + knowledgeBase : ''}
 

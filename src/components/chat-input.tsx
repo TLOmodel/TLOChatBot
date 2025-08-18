@@ -82,12 +82,12 @@ export default function ChatInput({ onSend, isSending = false }: ChatInputProps)
           disabled={isSending}
         />
         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-        <div className="absolute bottom-3 left-4">
+        <div className="absolute bottom-0 left-3 top-0 flex items-center">
           <Button variant="ghost" size="icon" aria-label="Attach file" onClick={handleAttachment} disabled={isSending}>
             <Paperclip className="size-5" />
           </Button>
         </div>
-        <div className="absolute bottom-3 right-4 flex items-center gap-2">
+        <div className="absolute bottom-0 right-4 top-0 flex items-center gap-2">
           <Button variant="ghost" size="icon" aria-label="Use microphone" disabled={isSending}>
             <Mic className="size-5" />
           </Button>
