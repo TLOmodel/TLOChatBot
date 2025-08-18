@@ -5,10 +5,15 @@ export interface Message {
   timestamp: string;
   userPrompt?: string;
   isRegenerating?: boolean;
+  attachment?: {
+    name: string;
+    type: string;
+    data: string;
+  };
 }
 
 export interface Conversation {
-  id: string;
+  id:string;
   title: string;
   messages: Message[];
   preview: string;

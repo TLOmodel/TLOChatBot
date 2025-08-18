@@ -4,8 +4,8 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Chatterbox Clone',
-  description: 'A modern AI chat application clone.',
+  title: 'TLO',
+  description: 'A modern AI chat application.',
 };
 
 export default function RootLayout({

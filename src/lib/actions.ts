@@ -1,18 +1,12 @@
 'use server';
 
+import { chat } from '@/ai/flows/chat-flow';
 import { regenerateAiResponse } from '@/ai/flows/regenerate-ai-response';
 import { z } from 'zod';
+import { ChatInputSchema, RegenerateAiResponseInputSchema, type ChatInput, type RegenerateAiResponseInput } from './ai-schemas';
 
-const RegenerateSchema = z.object({
-  previousResponse: z.string(),
-  userPrompt: z.string(),
-});
-
-export async function handleRegenerate(values: {
-  previousResponse: string;
-  userPrompt: string;
-}) {
-  const validated = RegenerateSchema.safeParse(values);
+export async function handleRegenerate(values: RegenerateAiResponseInput) {
+  const validated = RegenerateAiResponseInputSchema.safeParse(values);
   if (!validated.data) {
     return { error: 'Invalid input.' };
   }
@@ -26,6 +20,24 @@ export async function handleRegenerate(values: {
     }
   } catch (error) {
     console.error('Error regenerating response:', error);
-    return { error: 'An unexpected error occurred while regenerating the response.' };
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+    return { error: errorMessage, success: false };
   }
 }
+
+
+export async function handleChat(values: ChatInput) {
+    const validated = ChatInputSchema.safeParse(values);
+    if (!validated.data) {
+      return { error: 'Invalid input.', success: false };
+    }
+  
+    try {
+      const result = await chat(validated.data);
+      return { success: true, response: result.response };
+    } catch (error) {
+      console.error('Error handling chat:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+      return { error: errorMessage, success: false };
+    }
+  }

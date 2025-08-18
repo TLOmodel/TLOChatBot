@@ -3,14 +3,9 @@
 import * as React from 'react';
 import {
   ChevronsRight,
-  Download,
-  Edit,
-  PanelLeftClose,
-  PanelLeftOpen,
   Plus,
   Search,
   Settings,
-  Trash2,
   User,
 } from 'lucide-react';
 import {
@@ -24,24 +19,25 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarTrigger,
-  useSidebar,
 } from '@/components/ui/sidebar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { mockConversations } from '@/lib/data';
 import type { Conversation, Message } from '@/lib/types';
 import ChatHeader from '@/components/chat-header';
 import MessageBubble from '@/components/message-bubble';
 import ChatInput from '@/components/chat-input';
-import { handleRegenerate } from '@/lib/actions';
+import { handleRegenerate, handleChat } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { TloLogo } from '@/components/tlo-logo';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function ChatInterface() {
-  const [conversations, setConversations] = React.useState<Conversation[]>(mockConversations);
-  const [activeConversationId, setActiveConversationId] = React.useState<string>('conv1');
+  const [conversations, setConversations] = React.useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = React.useState<string | null>(null);
   const [isPending, startTransition] = React.useTransition();
+  const [searchTerm, setSearchTerm] = React.useState('');
 
   const { toast } = useToast();
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -50,6 +46,10 @@ export default function ChatInterface() {
     () => conversations.find((c) => c.id === activeConversationId),
     [conversations, activeConversationId]
   );
+  
+  const filteredConversations = React.useMemo(() => 
+    conversations.filter(c => c.title.toLowerCase().includes(searchTerm.toLowerCase()))
+  , [conversations, searchTerm]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,24 +59,97 @@ export default function ChatInterface() {
     scrollToBottom();
   }, [activeConversation?.messages]);
 
-  const addMessage = (content: string) => {
+  const createNewChat = () => {
+    const newId = uuidv4();
+    const newConversation: Conversation = {
+      id: newId,
+      title: 'New Chat',
+      messages: [],
+      preview: 'Start a new conversation',
+    };
+    setConversations([newConversation, ...conversations]);
+    setActiveConversationId(newId);
+  };
+
+  const handleSendMessage = (content: string, attachment?: { name: string; type: string; data: string }) => {
     if (!activeConversation) return;
 
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
+    const userMessage: Message = {
+      id: uuidv4(),
       author: 'user',
       content,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      attachment: attachment,
     };
 
-    const updatedConversations = conversations.map((conv) =>
+    const optimisticConversations = conversations.map((conv) =>
       conv.id === activeConversationId
-        ? { ...conv, messages: [...conv.messages, newMessage] }
+        ? {
+            ...conv,
+            messages: [...conv.messages, userMessage],
+            title: conv.title === 'New Chat' ? content.substring(0, 30) : conv.title,
+            preview: `You: ${content.substring(0,30)}...`
+          }
         : conv
     );
-    setConversations(updatedConversations);
+    setConversations(optimisticConversations);
+    
+    startTransition(async () => {
+      const history = (activeConversation?.messages ?? []).map(m => ({
+          role: m.author === 'user' ? 'user' : 'model' as const,
+          content: [{text: m.content}]
+      }))
+      
+      const chatInput = { 
+        message: content, 
+        history,
+        attachment: attachment ? {
+            dataUri: attachment.data,
+        } : undefined
+      };
+
+      const result = await handleChat(chatInput);
+      
+      const convsWithUserMessage = conversations.map(c => 
+        c.id === activeConversationId
+        ? {
+            ...c,
+            messages: [...c.messages, userMessage],
+          }
+        : c
+        );
+
+      const resultConvs = convsWithUserMessage.map((conv) => {
+        if (conv.id === activeConversationId) {
+          const aiMessage: Message = {
+            id: uuidv4(),
+            author: 'ai',
+            content: result.success ? result.response! : `Sorry, something went wrong. ${result.error}`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            userPrompt: content,
+          };
+          return {
+            ...conv,
+            messages: [...conv.messages, aiMessage],
+            title: conv.title === 'New Chat' ? content.substring(0, 30) : conv.title,
+            preview: `AI: ${result.success ? result.response!.substring(0,30) : '...'}...`
+          };
+        }
+        return conv;
+      })
+
+      setConversations(resultConvs);
+
+      if (!result.success) {
+        toast({
+          variant: 'destructive',
+          title: 'AI Response Error',
+          description: result.error,
+        });
+      }
+    });
   };
-  
+
   const onRegenerate = (messageId: string) => {
     if (!activeConversation) return;
 
@@ -84,9 +157,17 @@ export default function ChatInterface() {
     if (messageIndex === -1 || !activeConversation.messages[messageIndex].userPrompt) return;
 
     const messageToRegenerate = activeConversation.messages[messageIndex];
+    
+    // Find the original user message that prompted this AI response.
+    let userPromptMessage: Message | undefined;
+    for (let i = messageIndex -1; i >= 0; i--) {
+        if(activeConversation.messages[i].author === 'user') {
+            userPromptMessage = activeConversation.messages[i];
+            break;
+        }
+    }
 
     startTransition(async () => {
-      // Set regenerating state
       const optimisticConversations = conversations.map((conv) => {
         if (conv.id === activeConversationId) {
           return {
@@ -132,15 +213,56 @@ export default function ChatInterface() {
       setConversations(finalConversations);
     });
   };
+  
+  const handleClearConversation = () => {
+    if (!activeConversationId) return;
+    const updatedConversations = conversations.map(c => 
+        c.id === activeConversationId ? {...c, messages: [], preview: 'Conversation cleared'} : c
+    );
+    setConversations(updatedConversations);
+  }
+
+  const handleDownloadConversation = () => {
+    if (!activeConversation) return;
+    const content = activeConversation.messages.map(m => `[${m.timestamp}] ${m.author.toUpperCase()}: ${m.content}`).join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${activeConversation.title.replace(/ /g, '_')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  
+  const handleEditTitle = (newTitle: string) => {
+    if (!activeConversationId) return;
+    const updatedConversations = conversations.map(c => 
+        c.id === activeConversationId ? {...c, title: newTitle} : c
+    );
+    setConversations(updatedConversations);
+  };
+
+
+  // Effect to create a new chat on initial load if none exist
+  React.useEffect(() => {
+    if (conversations.length === 0) {
+      createNewChat();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   return (
     <SidebarProvider defaultOpen>
       <div className="flex h-screen w-full bg-sidebar">
         <Sidebar className="group transition-all duration-300 ease-in-out" collapsible="icon">
           <SidebarHeader className="h-16 items-center">
-            <h1 className="text-xl font-semibold text-foreground group-data-[collapsible=icon]:hidden">
-              Chatterbox Clone
-            </h1>
+            <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
+                <TloLogo className="size-8 text-primary" />
+                <h1 className="text-xl font-semibold text-foreground">
+                    TLO
+                </h1>
+            </div>
             <div className="flex w-full items-center justify-end group-data-[collapsible=icon]:justify-center">
                <SidebarTrigger className="flex md:hidden" />
                <ChevronsRight className="hidden size-4 cursor-pointer text-muted-foreground transition hover:text-foreground group-data-[collapsible=icon]:block" />
@@ -150,16 +272,21 @@ export default function ChatInterface() {
             <div className="space-y-2">
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search conversations..." className="rounded-lg pl-8 group-data-[collapsible=icon]:hidden" />
+                    <Input 
+                        placeholder="Search conversations..." 
+                        className="rounded-lg pl-8 group-data-[collapsible=icon]:hidden"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
-                <Button className="w-full justify-start gap-2 rounded-lg group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:aspect-square">
+                <Button onClick={createNewChat} className="w-full justify-start gap-2 rounded-lg group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:aspect-square">
                     <Plus className="size-4" />
                     <span className="group-data-[collapsible=icon]:hidden">New Chat</span>
                 </Button>
             </div>
             
             <SidebarMenu className="mt-4">
-              {conversations.map((conv) => (
+              {filteredConversations.map((conv) => (
                 <SidebarMenuItem key={conv.id}>
                   <SidebarMenuButton
                     onClick={() => setActiveConversationId(conv.id)}
@@ -198,7 +325,12 @@ export default function ChatInterface() {
         </Sidebar>
 
         <SidebarInset className="flex flex-col">
-            <ChatHeader title={activeConversation?.title ?? 'New Chat'} />
+            <ChatHeader 
+                title={activeConversation?.title ?? 'New Chat'} 
+                onClear={handleClearConversation}
+                onDownload={handleDownloadConversation}
+                onEditTitle={handleEditTitle}
+            />
             <ScrollArea className="flex-1">
                 <div className="container mx-auto max-w-4xl p-4 space-y-8">
                     {activeConversation?.messages.map((message) => (
@@ -213,7 +345,7 @@ export default function ChatInterface() {
                 </div>
             </ScrollArea>
             <div className="sticky bottom-0 bg-background/80 pb-4 pt-2 backdrop-blur-sm">
-                 <ChatInput onSend={addMessage} />
+                 <ChatInput onSend={handleSendMessage} isSending={isPending} />
             </div>
         </SidebarInset>
       </div>

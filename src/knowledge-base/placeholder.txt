@@ -1,0 +1,3 @@
+This is a placeholder file for the knowledge base.
+You can add your own text files here to provide context to the AI.
+The content of all files in this directory will be read and passed to the language model.

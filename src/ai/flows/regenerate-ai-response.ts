@@ -1,28 +1,15 @@
-// regenerate-ai-response.ts
 'use server';
 
 /**
  * @fileOverview This file defines a Genkit flow for regenerating the last AI response.
  *
  * regenerateAiResponse - An async function that regenerates the last AI response.
- * RegenerateAiResponseInput - The input type for the regenerateAiResponse function.
- * RegenerateAiResponseOutput - The output type for the regenerateAiResponse function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { RegenerateAiResponseInputSchema, RegenerateAiResponseOutputSchema, type RegenerateAiResponseInput } from '@/lib/ai-schemas';
 
-const RegenerateAiResponseInputSchema = z.object({
-  previousResponse: z.string().describe('The AI’s previous response.'),
-  userPrompt: z.string().describe('The user’s original prompt.'),
-});
-export type RegenerateAiResponseInput = z.infer<typeof RegenerateAiResponseInputSchema>;
-
-const RegenerateAiResponseOutputSchema = z.object({
-  newResponse: z.string().describe('The regenerated AI response.'),
-  shouldRegenerate: z.boolean().describe('Whether the AI should regenerate the response'),
-});
-export type RegenerateAiResponseOutput = z.infer<typeof RegenerateAiResponseOutputSchema>;
 
 const shouldRegenerateResponseTool = ai.defineTool({
   name: 'shouldRegenerateResponse',
@@ -65,7 +52,7 @@ Then, if the tool indicates that you should regenerate the response, generate a 
 Output your decision to regenerate, and if regenerating, the new response.`, // Ensure newlines are included in the prompt.
 });
 
-export async function regenerateAiResponse(input: RegenerateAiResponseInput): Promise<RegenerateAiResponseOutput> {
+export async function regenerateAiResponse(input: RegenerateAiResponseInput) {
   return regenerateAiResponseFlow(input);
 }
 
