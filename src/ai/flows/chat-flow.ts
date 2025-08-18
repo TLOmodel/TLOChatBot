@@ -59,8 +59,8 @@ ${knowledgeBase ? `START OF KNOWLEDGE BASE\n${knowledgeBase}\nEND OF KNOWLEDGE B
 
     const { text } = await ai.generate({
       history: [
-        ...history,
         { role: 'system', content: [{ text: systemPrompt }] },
+        ...history,
       ],
       prompt: {
         text: message,
