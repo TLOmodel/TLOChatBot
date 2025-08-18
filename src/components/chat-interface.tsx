@@ -1,6 +1,8 @@
+
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import {
   ChevronsRight,
   Plus,
@@ -258,7 +260,7 @@ export default function ChatInterface() {
         <Sidebar className="group transition-all duration-300 ease-in-out" collapsible="icon">
           <SidebarHeader className="h-16 items-center">
             <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
-                <TloLogo className="size-8 text-primary" />
+                <Image src="/tlo_logo.jpg" alt="TLO Logo" width={32} height={32} className="rounded-md" />
                 <h1 className="text-xl font-semibold text-foreground">
                     TLO
                 </h1>

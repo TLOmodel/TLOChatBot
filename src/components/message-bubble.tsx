@@ -1,6 +1,8 @@
+
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { Copy, RefreshCw, Bot, User, Loader2, Paperclip, Download } from 'lucide-react';
 import type { Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -51,7 +53,7 @@ export default function MessageBubble({ message, onRegenerate, isPending }: Mess
     return (
         <div className="group relative flex w-full animate-bubble-in items-start gap-4 justify-start">
              <div className="flex-shrink-0 rounded-full border bg-card p-2">
-                <TloLogo className="size-5 text-primary" />
+                <Image src="/tlo_logo.jpg" alt="TLO Logo" width={20} height={20} className="rounded-full" />
             </div>
             <div className={cn('max-w-xl rounded-2xl p-4 rounded-tl-none bg-card border')}>
                 <Loader2 className="size-5 animate-spin text-primary" />
@@ -69,8 +71,8 @@ export default function MessageBubble({ message, onRegenerate, isPending }: Mess
       )}
     >
       {!isUser && (
-        <div className="flex-shrink-0 rounded-full border bg-card p-2">
-          <TloLogo className="size-5 text-primary" />
+        <div className="flex-shrink-0 rounded-full border bg-card p-1.5">
+          <Image src="/tlo_logo.jpg" alt="TLO Logo" width={20} height={20} className="rounded-full" />
         </div>
       )}
 
