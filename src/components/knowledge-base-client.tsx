@@ -5,6 +5,9 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
 import { ArrowLeft, Book, Github, Globe, FileText, File } from "lucide-react";
+import * as React from 'react';
+import { FileUploadForm } from "./file-upload-form";
+import { useToast } from "@/hooks/use-toast";
 
 interface KnowledgeBaseClientProps {
     files: string[];
@@ -21,7 +24,26 @@ const getFileIcon = (fileName: string) => {
 };
 
 
-export function KnowledgeBaseClient({ files }: KnowledgeBaseClientProps) {
+export function KnowledgeBaseClient({ files: initialFiles }: KnowledgeBaseClientProps) {
+  const [files, setFiles] = React.useState(initialFiles);
+  const { toast } = useToast();
+
+  const handleUploadSuccess = (newFileName: string) => {
+    setFiles(prevFiles => [...prevFiles, newFileName].sort());
+    toast({
+        title: "Upload Successful",
+        description: `File "${newFileName}" has been added to the knowledge base.`,
+    })
+  };
+
+  const handleUploadError = (errorMessage: string) => {
+    toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: errorMessage,
+    });
+  }
+
   return (
     <div className="flex flex-col h-full">
         <header className="flex h-16 items-center border-b bg-background px-4">
@@ -36,10 +58,18 @@ export function KnowledgeBaseClient({ files }: KnowledgeBaseClientProps) {
             <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="md:col-span-2 lg:col-span-3">
                     <CardHeader>
-                        <CardTitle>AI Context Sources</CardTitle>
-                        <CardDescription>
-                            The AI uses the files listed below as its primary source of knowledge. To give the AI more context, add .txt or .docx files to the <code>src/knowledge-base</code> directory in your project.
-                        </CardDescription>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle>AI Context Sources</CardTitle>
+                                <CardDescription>
+                                    The AI uses the files listed below as its primary source of knowledge. Add .txt or .docx files to give the AI more context.
+                                </CardDescription>
+                            </div>
+                            <FileUploadForm 
+                                onUploadSuccess={handleUploadSuccess} 
+                                onUploadError={handleUploadError} 
+                            />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <ScrollArea className="h-64 rounded-md border">
@@ -54,7 +84,7 @@ export function KnowledgeBaseClient({ files }: KnowledgeBaseClientProps) {
                                         ))}
                                     </ul>
                                 ) : (
-                                    <p className="text-center text-muted-foreground">No files found in knowledge base.</p>
+                                    <p className="text-center text-muted-foreground">No files found. Upload a file to get started.</p>
                                 )}
                             </div>
                         </ScrollArea>
