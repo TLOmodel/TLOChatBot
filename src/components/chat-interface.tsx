@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -7,8 +8,7 @@ import {
   ChevronsRight,
   Plus,
   Search,
-  Settings,
-  User,
+  Database,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -32,8 +32,8 @@ import { handleRegenerate, handleChat } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { TloLogo } from '@/components/tlo-logo';
 import { v4 as uuidv4 } from 'uuid';
+import Link from 'next/link';
 
 export default function ChatInterface() {
   const [conversations, setConversations] = React.useState<Conversation[]>([]);
@@ -312,16 +312,12 @@ export default function ChatInterface() {
                     <ThemeToggle />
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                    <SidebarMenuButton tooltip={{children: "Settings", side:"right"}}>
-                        <Settings className="size-4" />
-                        <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+                  <Link href="/knowledge-base" className="w-full">
+                    <SidebarMenuButton tooltip={{children: "Knowledge Base", side:"right"}} className="w-full">
+                        <Database className="size-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">Knowledge Base</span>
                     </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton tooltip={{children: "Profile", side:"right"}}>
-                        <User className="size-4" />
-                        <span className="group-data-[collapsible=icon]:hidden">Profile</span>
-                    </SidebarMenuButton>
+                  </Link>
                 </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
