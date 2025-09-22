@@ -263,7 +263,7 @@ export default function ChatInterface() {
       <div className="flex h-screen w-full bg-sidebar">
         <Sidebar className="group transition-all duration-300 ease-in-out" collapsible="icon">
           <SidebarHeader className="h-16 items-center">
-             <Link href="https://www.tlo.org/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
+             <Link href="https://www.tlomodel.org/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
                 <Image src="/tlo_logo.jpg" alt="TLO Logo" width={32} height={32} className="rounded-md" />
                 <h1 className="text-xl font-semibold text-foreground">
                     TLO
@@ -313,7 +313,7 @@ export default function ChatInterface() {
             <SidebarMenu>
                  <SidebarMenuItem>
                   <a
-                    href="https://github.com/TLOmodel"
+                    href="https://github.com/UCL/TLOmodel"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full"
