@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
-import { ArrowLeft, Book, Github, Globe, FileText, FileWord } from "lucide-react";
+import { ArrowLeft, Book, Github, Globe, FileText, File } from "lucide-react";
 
 interface KnowledgeBaseClientProps {
     files: string[];
@@ -12,7 +12,7 @@ interface KnowledgeBaseClientProps {
 
 const getFileIcon = (fileName: string) => {
     if (fileName.endsWith('.docx')) {
-        return <FileWord className="size-5 text-blue-500" />;
+        return <File className="size-5 text-blue-500" />;
     }
     if (fileName.endsWith('.txt')) {
         return <FileText className="size-5 text-gray-500" />;
