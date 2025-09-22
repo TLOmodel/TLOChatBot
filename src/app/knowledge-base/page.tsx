@@ -10,7 +10,12 @@ export default async function KnowledgeBasePage() {
   try {
     files = await readdir(kbPath);
   } catch (error) {
-    console.error("Could not read knowledge base directory", error);
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        // If the directory doesn't exist, we can just proceed with an empty list.
+        console.warn("Knowledge base directory not found. It will be created on first upload.");
+    } else {
+        console.error("Could not read knowledge base directory", error);
+    }
   }
 
   return (

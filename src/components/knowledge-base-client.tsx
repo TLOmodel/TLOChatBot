@@ -78,7 +78,7 @@ export function KnowledgeBaseClient({ files: initialFiles }: KnowledgeBaseClient
                             <div className="p-4">
                                 {files.length > 0 ? (
                                     <ul>
-                                        {files.map(file => (
+                                        {files.filter(f => f.trim() !== '').map(file => (
                                             <li key={file} className="flex items-center gap-3 py-2">
                                                 {getFileIcon(file)}
                                                 <span className="font-mono text-sm">{file}</span>
