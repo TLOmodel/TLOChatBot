@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 config(); // Load environment variables from .env file
 
 import { db, storage } from '../src/lib/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import fs from 'fs/promises';
 import path from 'path';
