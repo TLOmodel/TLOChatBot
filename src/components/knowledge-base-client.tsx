@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -8,7 +9,7 @@ import { ArrowLeft, Book, Github, Globe, FileText, File } from "lucide-react";
 import * as React from 'react';
 import { FileUploadForm } from "./file-upload-form";
 import { useToast } from "@/hooks/use-toast";
-import { collection, getDocs, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 interface KnowledgeFile {
@@ -34,20 +35,28 @@ export function KnowledgeBaseClient() {
 
   React.useEffect(() => {
     const filesCollection = collection(db, "knowledgeBaseFiles");
+    const q = query(filesCollection, orderBy("createdAt", "desc"));
     
     // Use onSnapshot for real-time updates
-    const unsubscribe = onSnapshot(filesCollection, (snapshot) => {
+    const unsubscribe = onSnapshot(q, (snapshot) => {
         const fileList = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() } as KnowledgeFile))
-            .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); // Sort by creation time, newest first
+            .map(doc => ({ id: doc.id, ...doc.data() } as KnowledgeFile));
         setFiles(fileList);
     }, (error) => {
         console.error("Error fetching files:", error);
-        toast({
-            variant: "destructive",
-            title: "Failed to load files",
-            description: "Could not fetch the list of files from the knowledge base."
-        });
+        if (error.code === 'permission-denied') {
+            toast({
+                variant: "destructive",
+                title: "Permissions Error",
+                description: "Could not fetch files. Please check your Firestore security rules."
+            });
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Failed to load files",
+                description: "Could not fetch the list of files from the knowledge base."
+            });
+        }
     });
 
     // Cleanup subscription on unmount
@@ -112,7 +121,7 @@ export function KnowledgeBaseClient() {
                                         ))}
                                     </ul>
                                 ) : (
-                                    <p className="text-center text-muted-foreground">No files found. Upload a file to get started.</p>
+                                    <p className="text-center text-muted-foreground">No files found. Run 'npm run db:seed' or upload a file to get started.</p>
                                 )}
                             </div>
                         </ScrollArea>

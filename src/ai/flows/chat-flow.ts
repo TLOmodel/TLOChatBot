@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -51,7 +52,7 @@ async function getKnowledgeBaseContent(): Promise<string> {
 
     const nonEmptyContents = contents.filter(content => content && content.trim() !== '');
     if (nonEmptyContents.length > 0) {
-      return nonEmptyContents.join('\n\n---\n\n');
+      return `START OF KNOWLEDGE BASE\n${nonEmptyContents.join('\n\n---\n\n')}\nEND OF KNOWLEDGE BASE`;
     }
   } catch (error) {
     console.error('Error reading knowledge base from Firestore:', error);
@@ -87,11 +88,7 @@ The model is developed using a system of continuous integration, review, testing
 Your answers should be in-depth, helpful, and based on the provided context. You can format your responses with Markdown.`;
 
     if (knowledgeBaseContent) {
-      systemPrompt += `\n\nYou have also been provided with the following information from documents in a knowledge base. Use this to supplement your knowledge and answer user questions. If the user's question is not covered by the information, state that you do not have information on that topic based on the provided documents.
-
-START OF KNOWLEDGE BASE
-${knowledgeBaseContent}
-END OF KNOWLEDGE BASE`;
+      systemPrompt += `\n\nYou have also been provided with the following information from documents in a knowledge base. Use this to supplement your knowledge and answer user questions. If the user's question is not covered by the information, state that you do not have information on that topic based on the provided documents.\n${knowledgeBaseContent}`;
     } else {
       systemPrompt += `\nThe knowledge base is currently empty. Answer questions to the best of your ability based on the framework description provided.`
     }
