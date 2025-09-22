@@ -28,6 +28,8 @@ async function getKnowledgeBaseContent(): Promise<string> {
     const contents = await Promise.all(
       querySnapshot.docs.map(async (doc) => {
         const fileData = doc.data();
+        // The URL in firestore is the download URL, but getBytes expects a storage path.
+        // We can create a ref from the download URL itself.
         const fileRef = ref(storage, fileData.url);
 
         try {
