@@ -15,6 +15,12 @@ const STORAGE_FOLDER = 'knowledge-base';
 async function main() {
   console.log('Starting knowledge base seeding...');
 
+  if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    console.error("Error: Firebase environment variables are not set.");
+    console.error("Please ensure your .env file is populated with the correct Firebase config.");
+    return;
+  }
+
   try {
     // Get existing files from Firestore to avoid duplicates
     const filesCollection = collection(db, FIRESTORE_COLLECTION);
