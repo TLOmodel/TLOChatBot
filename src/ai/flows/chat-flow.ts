@@ -96,8 +96,7 @@ END OF KNOWLEDGE BASE`;
       systemPrompt += `\nThe knowledge base is currently empty. Answer questions to the best of your ability based on the framework description provided.`
     }
 
-    let promptText = message;
-    let media: { url: string } | undefined;
+    const promptParts: any[] = [{ text: message }];
 
     if (attachment) {
       if (attachment.contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
@@ -105,10 +104,15 @@ END OF KNOWLEDGE BASE`;
         const base64Data = attachment.dataUri.split(',')[1];
         const buffer = Buffer.from(base64Data, 'base64');
         const { value: docxText } = await mammoth.extractRawText({ buffer });
-        promptText = `Using the following document content, please answer my question.\n\nDOCUMENT CONTENT:\n${docxText}\n\nQUESTION:\n${message}`;
+        
+        // Prepend the document context to the prompt parts array
+        promptParts.unshift({
+          text: `Please use the following document to answer the user's question. DOCUMENT CONTENT: """${docxText}"""\n\n`,
+        });
+
       } else {
-        // For other file types (like images), pass the data URI directly.
-        media = { url: attachment.dataUri };
+        // For other file types (like images), add the data URI as a media part.
+        promptParts.push({ media: { url: attachment.dataUri } });
       }
     }
 
@@ -116,10 +120,7 @@ END OF KNOWLEDGE BASE`;
       model: 'googleai/gemini-2.0-flash',
       system: systemPrompt,
       history: history,
-      prompt: {
-        text: promptText,
-        media: media,
-      },
+      prompt: promptParts,
     });
     
     return { response: text };
