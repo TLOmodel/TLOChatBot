@@ -71,7 +71,9 @@ const chatFlow = ai.defineFlow(
     
     const knowledgeBaseContent = await getKnowledgeBaseContent();
 
-    let systemPrompt = `Thanzi La Onse (TLO) Model Knowledge Base
+    let systemPrompt = `You are a helpful AI assistant. Your responses should be formatted in clear and readable Markdown.
+
+Thanzi La Onse (TLO) Model Knowledge Base
 Project Overview and Objectives
 
 What is the TLO Model? The Thanzi La Onse (TLO) Model is an open-source epidemiological and economic simulation framework developed to inform health policy in low-income countries
@@ -1031,44 +1033,4 @@ tlomodel.org
 tlomodel.org
 ; IHME-projected cuts → 7–16% increase in DALYs and reversing gains in RMNCH, malaria, TB
 tlomodel.org
-.`;
-
-    if (knowledgeBaseContent) {
-      systemPrompt += `\n\nYou have also been provided with the following information from documents in a knowledge base. Use this to supplement your knowledge and answer user questions. If the user's question is not covered by the information, state that you do not have information on that topic based on the provided documents.\n${knowledgeBaseContent}`;
-    } else {
-      systemPrompt += `\nThe knowledge base is currently empty. Answer questions to the best of your ability based on the framework description provided.`
-    }
-
-    const promptParts: any[] = [];
-
-    if (attachment) {
-      if (attachment.contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // It's a .docx file, extract text content.
-        const base64Data = attachment.dataUri.split(',')[1];
-        const buffer = Buffer.from(base64Data, 'base64');
-        const { value: docxText } = await mammoth.extractRawText({ buffer });
-        
-        // Prepend the document context to the prompt parts array
-        promptParts.push({
-          text: `Please use the following document to answer the user's question. DOCUMENT CONTENT: """${docxText}"""\n\nUSER QUESTION: ${message}`,
-        });
-
-      } else {
-        // For other file types (like images), add the data URI as a media part.
-        promptParts.push({text: message});
-        promptParts.push({ media: { url: attachment.dataUri } });
-      }
-    } else {
-      promptParts.push({ text: message });
-    }
-
-    const { text } = await ai.generate({
-      model: 'googleai/gemini-2.0-flash',
-      system: systemPrompt,
-      history: history,
-      prompt: promptParts,
-    });
-    
-    return { response: text };
-  }
-);
+. what happened to this prompt i gave you why did you chnage it it should have been what i gave you exactly no chnages no additions
