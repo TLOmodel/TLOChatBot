@@ -8,6 +8,7 @@ import {
   ChevronsRight,
   Plus,
   Search,
+  Github,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -88,8 +89,8 @@ export default function ChatInterface() {
         ? {
             ...conv,
             messages: [...conv.messages, userMessage],
-            title: conv.title === 'New Chat' ? content.substring(0, 30) : conv.title,
-            preview: `You: ${content.substring(0,30)}...`
+            title: conv.title === 'New Chat' && content ? content.substring(0, 30) : conv.title,
+            preview: content ? `You: ${content.substring(0,30)}...` : `You sent an attachment.`
           }
         : conv
     );
@@ -112,10 +113,13 @@ export default function ChatInterface() {
 
       const result = await handleChat(chatInput);
       
+      const title = activeConversation.title === 'New Chat' && content ? content.substring(0, 30) : activeConversation.title;
+
       const convsWithUserMessage = conversations.map(c => 
         c.id === activeConversationId
         ? {
             ...c,
+            title,
             messages: [...c.messages, userMessage],
           }
         : c
@@ -133,7 +137,7 @@ export default function ChatInterface() {
           return {
             ...conv,
             messages: [...conv.messages, aiMessage],
-            title: conv.title === 'New Chat' ? content.substring(0, 30) : conv.title,
+            title: title,
             preview: `AI: ${result.success ? result.response!.substring(0,30) : '...'}...`
           };
         }
@@ -259,12 +263,12 @@ export default function ChatInterface() {
       <div className="flex h-screen w-full bg-sidebar">
         <Sidebar className="group transition-all duration-300 ease-in-out" collapsible="icon">
           <SidebarHeader className="h-16 items-center">
-            <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
+             <Link href="https://www.tlo.org/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
                 <Image src="/tlo_logo.jpg" alt="TLO Logo" width={32} height={32} className="rounded-md" />
                 <h1 className="text-xl font-semibold text-foreground">
                     TLO
                 </h1>
-            </div>
+            </Link>
             <div className="flex w-full items-center justify-end group-data-[collapsible=icon]:justify-center">
                <SidebarTrigger className="flex md:hidden" />
                <ChevronsRight className="hidden size-4 cursor-pointer text-muted-foreground transition hover:text-foreground group-data-[collapsible=icon]:block" />
@@ -307,6 +311,19 @@ export default function ChatInterface() {
           </SidebarContent>
           <SidebarFooter className="p-2">
             <SidebarMenu>
+                 <SidebarMenuItem>
+                  <a
+                    href="https://github.com/TLOmodel"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full"
+                  >
+                    <SidebarMenuButton className="w-full" tooltip={{ children: 'GitHub', side: 'right' }}>
+                      <Github className="size-4" />
+                      <span className="group-data-[collapsible=icon]:hidden ml-2">GitHub</span>
+                    </SidebarMenuButton>
+                  </a>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                     <ThemeToggle />
                 </SidebarMenuItem>
