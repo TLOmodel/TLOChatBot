@@ -14,37 +14,33 @@ import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from '@/lib/firebase';
 import {getStorage, ref, getBytes} from 'firebase/storage';
 
+const KNOWLEDGE_BASE_URLS = [
+    { name: "Schistosomiasis.docx", url: "https://www.tlomodel.org/resources/disease_modules/Schistosomiasis.docx" },
+    { name: "HIV-in-Malawi.docx", url: "https://www.tlomodel.org/resources/disease_modules/HIV-in-Malawi.docx" },
+    { name: "CardioMetabolicDisorders.docx", url: "https://www.tlomodel.org/resources/disease_modules/CardioMetabolicDisorders.docx" },
+    { name: "Adult-Malnutrition-in-Malawi.docx", url: "https://www.tlomodel.org/resources/disease_modules/Adult-Malnutrition-in-Malawi.docx" },
+];
+
 async function getKnowledgeBaseContent(): Promise<string> {
   try {
-    const filesCollection = collection(db, "knowledgeBaseFiles");
-    const q = query(filesCollection, orderBy("createdAt", "desc"), limit(10)); // Get latest 10 files
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      return '';
-    }
-    
-    const storage = getStorage();
-
     const contents = await Promise.all(
-      querySnapshot.docs.map(async (doc) => {
-        const fileData = doc.data();
-        // The URL in firestore is the download URL, but getBytes expects a storage path.
-        // We can create a ref from the download URL itself.
-        const fileRef = ref(storage, fileData.url);
-
+      KNOWLEDGE_BASE_URLS.map(async (file) => {
         try {
-          const bytes = await getBytes(fileRef);
-          const buffer = Buffer.from(bytes);
+          const response = await fetch(file.url);
+          if (!response.ok) {
+            console.error(`Error fetching file ${file.name}: ${response.statusText}`);
+            return '';
+          }
+          const buffer = await response.arrayBuffer();
 
-          if (fileData.name.endsWith('.txt')) {
-            return buffer.toString('utf-8');
-          } else if (fileData.name.endsWith('.docx')) {
-            const result = await mammoth.extractRawText({ buffer });
+          if (file.name.endsWith('.txt')) {
+            return Buffer.from(buffer).toString('utf-8');
+          } else if (file.name.endsWith('.docx')) {
+            const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
             return result.value;
           }
         } catch (readError) {
-          console.error(`Error processing file ${fileData.name} from storage:`, readError);
+          console.error(`Error processing file ${file.name} from URL:`, readError);
         }
         return '';
       })
@@ -55,7 +51,7 @@ async function getKnowledgeBaseContent(): Promise<string> {
       return `START OF KNOWLEDGE BASE\n${nonEmptyContents.join('\n\n---\n\n')}\nEND OF KNOWLEDGE BASE`;
     }
   } catch (error) {
-    console.error('Error reading knowledge base from Firestore:', error);
+    console.error('Error reading knowledge base from URLs:', error);
   }
   return '';
 }
@@ -93,7 +89,7 @@ Your answers should be in-depth, helpful, and based on the provided context. You
       systemPrompt += `\nThe knowledge base is currently empty. Answer questions to the best of your ability based on the framework description provided.`
     }
 
-    const promptParts: any[] = [{ text: message }];
+    const promptParts: any[] = [];
 
     if (attachment) {
       if (attachment.contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
@@ -103,14 +99,17 @@ Your answers should be in-depth, helpful, and based on the provided context. You
         const { value: docxText } = await mammoth.extractRawText({ buffer });
         
         // Prepend the document context to the prompt parts array
-        promptParts.unshift({
-          text: `Please use the following document to answer the user's question. DOCUMENT CONTENT: """${docxText}"""\n\n`,
+        promptParts.push({
+          text: `Please use the following document to answer the user's question. DOCUMENT CONTENT: """${docxText}"""\n\nUSER QUESTION: ${message}`,
         });
 
       } else {
         // For other file types (like images), add the data URI as a media part.
+        promptParts.push({text: message});
         promptParts.push({ media: { url: attachment.dataUri } });
       }
+    } else {
+      promptParts.push({ text: message });
     }
 
     const { text } = await ai.generate({
