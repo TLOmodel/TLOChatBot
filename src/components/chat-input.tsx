@@ -135,16 +135,20 @@ export default function ChatInput({ onSend, isSending = false }: ChatInputProps)
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Send a message or type / for commands..."
-          className="min-h-[52px] w-full resize-none border-0 bg-transparent py-4 pl-12 pr-28 shadow-none focus-visible:ring-0"
+          className={cn("min-h-[52px] w-full resize-none border-0 bg-transparent py-4 pl-12 pr-28 shadow-none focus-visible:ring-0",
+             stagedAttachment ? 'pl-4' : 'pl-12'
+          )}
           rows={1}
           disabled={isSending}
         />
         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-        <div className="absolute bottom-0 left-3 top-0 flex items-center">
-          <Button variant="ghost" size="icon" aria-label="Attach file" onClick={handleAttachment} disabled={isSending}>
-            <Paperclip className="size-5" />
-          </Button>
-        </div>
+        {!stagedAttachment && (
+          <div className="absolute bottom-0 left-3 top-0 flex items-center">
+            <Button variant="ghost" size="icon" aria-label="Attach file" onClick={handleAttachment} disabled={isSending}>
+              <Paperclip className="size-5" />
+            </Button>
+          </div>
+        )}
         <div className="absolute bottom-0 right-4 top-0 flex items-center gap-2">
           <Button variant="ghost" size="icon" aria-label="Use microphone" onClick={handleVoiceClick} disabled={isSending} className={cn(isRecording && "bg-destructive text-destructive-foreground")}>
             <Mic className="size-5" />
