@@ -32,3 +32,8 @@ next-env.d.ts
 .DS_Store
 *.pem
 *.log
+node_modules/
+.env
+.firebase/
+firebase-debug.log
+dist/
