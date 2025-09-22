@@ -8,9 +8,14 @@ import { ArrowLeft, Book, Github, Globe, FileText, File } from "lucide-react";
 import * as React from 'react';
 import { FileUploadForm } from "./file-upload-form";
 import { useToast } from "@/hooks/use-toast";
+import { collection, getDocs, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-interface KnowledgeBaseClientProps {
-    files: string[];
+interface KnowledgeFile {
+    id: string;
+    name: string;
+    url: string;
+    createdAt: any;
 }
 
 const getFileIcon = (fileName: string) => {
@@ -23,18 +28,37 @@ const getFileIcon = (fileName: string) => {
     return <FileText className="size-5 text-gray-500" />;
 };
 
-
-export function KnowledgeBaseClient({ files: initialFiles }: KnowledgeBaseClientProps) {
-  const [files, setFiles] = React.useState(initialFiles);
+export function KnowledgeBaseClient() {
+  const [files, setFiles] = React.useState<KnowledgeFile[]>([]);
   const { toast } = useToast();
 
-  const handleUploadSuccess = (newFileName: string) => {
-    if (!files.includes(newFileName)) {
-      setFiles(prevFiles => [...prevFiles, newFileName].sort());
-    }
+  React.useEffect(() => {
+    const filesCollection = collection(db, "knowledgeBaseFiles");
+    
+    // Use onSnapshot for real-time updates
+    const unsubscribe = onSnapshot(filesCollection, (snapshot) => {
+        const fileList = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as KnowledgeFile))
+            .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); // Sort by creation time, newest first
+        setFiles(fileList);
+    }, (error) => {
+        console.error("Error fetching files:", error);
+        toast({
+            variant: "destructive",
+            title: "Failed to load files",
+            description: "Could not fetch the list of files from the knowledge base."
+        });
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [toast]);
+
+
+  const handleUploadSuccess = (fileName: string) => {
     toast({
         title: "Upload Successful",
-        description: `File "${newFileName}" has been added to the knowledge base.`,
+        description: `File "${fileName}" has been added to the knowledge base.`,
     })
   };
 
@@ -78,10 +102,12 @@ export function KnowledgeBaseClient({ files: initialFiles }: KnowledgeBaseClient
                             <div className="p-4">
                                 {files.length > 0 ? (
                                     <ul>
-                                        {files.filter(f => f.trim() !== '').map(file => (
-                                            <li key={file} className="flex items-center gap-3 py-2">
-                                                {getFileIcon(file)}
-                                                <span className="font-mono text-sm">{file}</span>
+                                        {files.map(file => (
+                                            <li key={file.id} className="flex items-center gap-3 py-2">
+                                                {getFileIcon(file.name)}
+                                                <a href={file.url} target="_blank" rel="noopener noreferrer" className="font-mono text-sm hover:underline">
+                                                  {file.name}
+                                                </a>
                                             </li>
                                         ))}
                                     </ul>

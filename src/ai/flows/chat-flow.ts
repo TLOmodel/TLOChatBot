@@ -8,41 +8,51 @@
 
 import { ai } from '@/ai/genkit';
 import { ChatInputSchema, ChatOutputSchema, type ChatInput } from '@/lib/ai-schemas';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import mammoth from 'mammoth';
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { db } from '@/lib/firebase';
+import {getStorage, ref, getBytes} from 'firebase/storage';
 
 async function getKnowledgeBaseContent(): Promise<string> {
-  const kbPath = path.join(process.cwd(), 'src', 'knowledge-base');
   try {
-    const files = await fs.readdir(kbPath);
+    const filesCollection = collection(db, "knowledgeBaseFiles");
+    const q = query(filesCollection, orderBy("createdAt", "desc"), limit(10)); // Get latest 10 files
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return '';
+    }
+    
+    const storage = getStorage();
+
     const contents = await Promise.all(
-      files.map(async (file) => {
-        const filePath = path.join(kbPath, file);
+      querySnapshot.docs.map(async (doc) => {
+        const fileData = doc.data();
+        const fileRef = ref(storage, fileData.url);
+
         try {
-          if (file.endsWith('.txt')) {
-            return await fs.readFile(filePath, 'utf-8');
-          } else if (file.endsWith('.docx')) {
-            const result = await mammoth.extractRawText({ path: filePath });
+          const bytes = await getBytes(fileRef);
+          const buffer = Buffer.from(bytes);
+
+          if (fileData.name.endsWith('.txt')) {
+            return buffer.toString('utf-8');
+          } else if (fileData.name.endsWith('.docx')) {
+            const result = await mammoth.extractRawText({ buffer });
             return result.value;
           }
         } catch (readError) {
-          console.error(`Error reading file ${file}:`, readError);
+          console.error(`Error processing file ${fileData.name} from storage:`, readError);
         }
         return '';
       })
     );
+
     const nonEmptyContents = contents.filter(content => content && content.trim() !== '');
     if (nonEmptyContents.length > 0) {
       return nonEmptyContents.join('\n\n---\n\n');
     }
   } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-        console.warn('Knowledge base directory not found. Creating it.');
-        await fs.mkdir(kbPath, { recursive: true });
-    } else {
-        console.error('Error reading knowledge base directory:', error);
-    }
+    console.error('Error reading knowledge base from Firestore:', error);
   }
   return '';
 }
@@ -99,7 +109,6 @@ END OF KNOWLEDGE BASE`;
         media = { url: attachment.dataUri };
       }
     }
-
 
     const { text } = await ai.generate({
       model: 'googleai/gemini-2.0-flash',

@@ -2,8 +2,10 @@
 
 import * as React from 'react';
 import { Button } from './ui/button';
-import { uploadFileToKnowledgeBase } from '@/lib/actions';
 import { Loader2, Upload } from 'lucide-react';
+import { storage, db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 interface FileUploadFormProps {
   onUploadSuccess: (fileName: string) => void;
@@ -11,27 +13,50 @@ interface FileUploadFormProps {
 }
 
 export function FileUploadForm({ onUploadSuccess, onUploadError }: FileUploadFormProps) {
-  const [isPending, startTransition] = React.useTransition();
+  const [isUploading, setIsUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append('file', file);
+    if (!file) return;
 
-      startTransition(async () => {
-        const result = await uploadFileToKnowledgeBase(formData);
-        if (result.success && result.fileName) {
-          onUploadSuccess(result.fileName);
-        } else {
-          onUploadError(result.error || 'An unknown error occurred.');
-        }
-      });
-    }
-     // Reset file input to allow uploading the same file again
-     if (fileInputRef.current) {
+    // Basic validation for file type
+    if (!file.name.endsWith('.txt') && !file.name.endsWith('.docx')) {
+      onUploadError('Invalid file type. Only .txt and .docx are allowed.');
+      // Reset file input
+      if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // 1. Upload to Firebase Storage
+      const storageRef = ref(storage, `knowledge-base/${Date.now()}-${file.name}`);
+      const uploadTask = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(uploadTask.ref);
+
+      // 2. Save metadata to Firestore
+      await addDoc(collection(db, "knowledgeBaseFiles"), {
+        name: file.name,
+        url: url,
+        createdAt: serverTimestamp(),
+        size: file.size,
+        type: file.type,
+      });
+
+      onUploadSuccess(file.name);
+    } catch (err: any) {
+      console.error("Upload failed:", err);
+      onUploadError(err.message || "An unknown error occurred during upload.");
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -47,10 +72,10 @@ export function FileUploadForm({ onUploadSuccess, onUploadError }: FileUploadFor
         onChange={handleFileChange}
         className="hidden"
         accept=".txt,.docx"
-        disabled={isPending}
+        disabled={isUploading}
       />
-      <Button onClick={handleUploadClick} disabled={isPending}>
-        {isPending ? (
+      <Button onClick={handleUploadClick} disabled={isUploading}>
+        {isUploading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
           <Upload className="mr-2 h-4 w-4" />
