@@ -29,7 +29,9 @@ export function KnowledgeBaseClient({ files: initialFiles }: KnowledgeBaseClient
   const { toast } = useToast();
 
   const handleUploadSuccess = (newFileName: string) => {
-    setFiles(prevFiles => [...prevFiles, newFileName].sort());
+    if (!files.includes(newFileName)) {
+      setFiles(prevFiles => [...prevFiles, newFileName].sort());
+    }
     toast({
         title: "Upload Successful",
         description: `File "${newFileName}" has been added to the knowledge base.`,
