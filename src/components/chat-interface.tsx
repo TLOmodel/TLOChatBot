@@ -8,7 +8,6 @@ import {
   ChevronsRight,
   Plus,
   Search,
-  Database,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -310,14 +309,6 @@ export default function ChatInterface() {
             <SidebarMenu>
                 <SidebarMenuItem>
                     <ThemeToggle />
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <Link href="/knowledge-base" className="w-full">
-                    <SidebarMenuButton tooltip={{children: "Knowledge Base", side:"right"}} className="w-full">
-                        <Database className="size-4" />
-                        <span className="group-data-[collapsible=icon]:hidden">Knowledge Base</span>
-                    </SidebarMenuButton>
-                  </Link>
                 </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>

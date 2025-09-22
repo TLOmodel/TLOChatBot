@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:seed": "tsx scripts/seed-knowledge-base.ts"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",

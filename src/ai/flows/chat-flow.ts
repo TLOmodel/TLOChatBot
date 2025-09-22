@@ -10,50 +10,51 @@
 import { ai } from '@/ai/genkit';
 import { ChatInputSchema, ChatOutputSchema, type ChatInput } from '@/lib/ai-schemas';
 import mammoth from 'mammoth';
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from '@/lib/firebase';
-import {getStorage, ref, getBytes} from 'firebase/storage';
-
-const KNOWLEDGE_BASE_URLS = [
-    { name: "Schistosomiasis.docx", url: "https://www.tlomodel.org/resources/disease_modules/Schistosomiasis.docx" },
-    { name: "HIV-in-Malawi.docx", url: "https://www.tlomodel.org/resources/disease_modules/HIV-in-Malawi.docx" },
-    { name: "CardioMetabolicDisorders.docx", url: "https://www.tlomodel.org/resources/disease_modules/CardioMetabolicDisorders.docx" },
-    { name: "Adult-Malnutrition-in-Malawi.docx", url: "https://www.tlomodel.org/resources/disease_modules/Adult-Malnutrition-in-Malawi.docx" },
-];
+import { getStorage, ref, getBytes } from 'firebase/storage';
 
 async function getKnowledgeBaseContent(): Promise<string> {
-  try {
-    const contents = await Promise.all(
-      KNOWLEDGE_BASE_URLS.map(async (file) => {
-        try {
-          const response = await fetch(file.url);
-          if (!response.ok) {
-            console.error(`Error fetching file ${file.name}: ${response.statusText}`);
+    const filesCollection = collection(db, "knowledgeBaseFiles");
+    const q = query(filesCollection, orderBy("createdAt", "desc"));
+
+    try {
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            console.log('No knowledge base files found in Firestore.');
             return '';
-          }
-          const buffer = await response.arrayBuffer();
-
-          if (file.name.endsWith('.txt')) {
-            return Buffer.from(buffer).toString('utf-8');
-          } else if (file.name.endsWith('.docx')) {
-            const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
-            return result.value;
-          }
-        } catch (readError) {
-          console.error(`Error processing file ${file.name} from URL:`, readError);
         }
-        return '';
-      })
-    );
 
-    const nonEmptyContents = contents.filter(content => content && content.trim() !== '');
-    if (nonEmptyContents.length > 0) {
-      return `START OF KNOWLEDGE BASE\n${nonEmptyContents.join('\n\n---\n\n')}\nEND OF KNOWLEDGE BASE`;
+        const storage = getStorage();
+        const fileContents = await Promise.all(
+            querySnapshot.docs.map(async (doc) => {
+                const fileData = doc.data();
+                const fileRef = ref(storage, fileData.url);
+                try {
+                    const buffer = await getBytes(fileRef);
+                    if (fileData.name.endsWith('.txt')) {
+                        return Buffer.from(buffer).toString('utf-8');
+                    } else if (fileData.name.endsWith('.docx')) {
+                        const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
+                        return result.value;
+                    }
+                } catch (readError) {
+                   console.error(`Error processing file ${fileData.name} from Storage:`, readError);
+                }
+                return '';
+            })
+        );
+        
+        const nonEmptyContents = fileContents.filter(content => content && content.trim() !== '');
+        if (nonEmptyContents.length > 0) {
+            return `START OF KNOWLEDGE BASE\n${nonEmptyContents.join('\n\n---\n\n')}\nEND OF KNOWLEDGE BASE`;
+        }
+
+    } catch (error) {
+        console.error('Error fetching knowledge base files from Firestore:', error);
     }
-  } catch (error) {
-    console.error('Error reading knowledge base from URLs:', error);
-  }
-  return '';
+    
+    return '';
 }
 
 export async function chat(input: ChatInput) {
